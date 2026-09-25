@@ -16,6 +16,12 @@ const CONFIG = {
   progHoja: 'sheet1',
   h24Hoja:  'Histórico Pagos 2024',
   h25Hoja:  'Histórico Pagos 2025',
+  radId:   'PEGA_AQUI_ID_RADICACION',
+  radHoja: 'sheet1',
+  formasId:    'PEGA_AQUI_ID_FORMAS_DE_PAGO',
+  formasPse:   'PSE',
+  formasAch:   'ach',
+  formasOtras: 'Otras formas de pago',
 
   // ⚙️ AJUSTE 3 — Ventana de "pagos recientes" en días.
   // Ojo: NO se cuenta desde hoy, se cuenta desde el último pago que
