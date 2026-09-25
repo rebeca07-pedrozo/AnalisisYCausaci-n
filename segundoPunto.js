@@ -223,6 +223,17 @@ function ejercicio2Historico() {
     destino.getRange(2, 4, detalle.length - 1, 2).setNumberFormat('yyyy-mm-dd');
     destino.getRange(2, 8, detalle.length - 1, 2).setNumberFormat('$#,##0');
   }
+    // Guardamos los KPIs del histórico para que el tablero no tenga que
+  // releer las 15.610 filas cada vez que alguien lo abre.
+  PropertiesService.getScriptProperties().setProperty('kpiHistorico', JSON.stringify({
+    evaluados: kpi.cumple + kpi.incumple,
+    cumple:    kpi.cumple,
+    incumple:  kpi.incumple,
+    sinCruce:  kpi.sinCruce,
+    impacto:   Math.round(kpi.impacto),
+    promDias:  Number((kpi.sumaDias / (kpi.cumple + kpi.incumple)).toFixed(1)),
+    maxDias:   kpi.maxDias
+  }));
 
   var total = kpi.cumple + kpi.incumple;
   Logger.log('HISTÓRICO 2025 → Evaluados: %s | Cumple: %s | Incumple: %s | Sin radicación: %s',
