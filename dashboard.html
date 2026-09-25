@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<style>
+/* ── Paleta Davivienda ────────────────────────────────────────
+   El logo viene con letras BLANCAS, así que la franja que lo
+   contiene usa un rojo profundo (#A8131A). Blanco sobre ese rojo
+   da 7,6:1 de contraste; sobre el rojo de marca puro (#ED1C27)
+   daría apenas 4,3:1 y el logo se vería lavado.
+   El rojo de marca se reserva para acentos y datos, donde sí
+   funciona a plena saturación.                                  */
+:root {
+  --rojo:        #ED1C27;
+  --rojo-hondo:  #A8131A;
+  --naranja:     #F58220;
+  --amarillo:    #FFF200;
+  --azul:        #00AEEF;
+  --blanco:      #FFFFFF;
+  --fondo:       #F4F5F7;
+  --texto:       #1F2328;
+  --texto-suave: #6B7280;
+  --borde:       #E4E6EA;
+  --radio:       14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  padding: 20px;
+}
+.contenedor { max-width: 1340px; margin: 0 auto; }
+
+/* ── Encabezado ─────────────────────────────────────────────── */
+.encabezado {
+  background: linear-gradient(120deg, var(--rojo-hondo) 0%, var(--rojo) 100%);
+  border-radius: var(--radio);
+  padding: 22px 28px;
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  box-shadow: 0 6px 20px rgba(168,19,26,.22);
+  margin-bottom: 18px;
+}
+/* Placa oscura detrás del logo: garantiza el contraste sin
+   importar dónde caiga el degradado. */
+.placa-logo {
+  background: rgba(0,0,0,.20);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex; align-items: center; justify-content: center;
+  min-width: 170px; min-height: 58px;
+}
+.placa-logo img { max-height: 40px; max-width: 200px; display: block; }
+.placa-logo .vacia { color: rgba(255,255,255,.75); font-size: 11px; text-align: center; }
+
+.titulo { flex: 1; min-width: 240px; }
+.titulo h1 { color: #fff; font-size: 21px; font-weight: 600; letter-spacing: .2px; }
+.titulo p  { color: rgba(255,255,255,.85); font-size: 12.5px; margin-top: 4px; }
+
+/* ── Filtros ────────────────────────────────────────────────── */
+.filtros {
+  background: #fff; border: 1px solid var(--borde); border-radius: var(--radio);
+  padding: 14px 20px; margin-bottom: 18px;
+  display: flex; gap: 18px; align-items: flex-end; flex-wrap: wrap;
+}
+.filtro { display: flex; flex-direction: column; gap: 5px; }
+.filtro label {
+  font-size: 10.5px; font-weight: 700; color: var(--texto-suave);
+  text-transform: uppercase; letter-spacing: .6px;
+}
+.filtro select {
+  padding: 8px 12px; border: 1.5px solid var(--borde); border-radius: 8px;
+  background: #fff; font-size: 13px; color: var(--texto); min-width: 185px;
+  font-family: inherit; cursor: pointer;
+}
+.filtro select:focus { outline: none; border-color: var(--rojo); }
+.btn-limpiar {
+  padding: 8px 16px; border: 1.5px solid var(--rojo); border-radius: 8px;
+  background: #fff; color: var(--rojo); font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+.btn-limpiar:hover { background: var(--rojo); color: #fff; }
+
+/* ── Tarjetas KPI ───────────────────────────────────────────── */
+.kpis {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px,1fr));
+  gap: 16px; margin-bottom: 18px;
+}
+.kpi {
+  background: #fff; border: 1px solid var(--borde); border-radius: var(--radio);
+  padding: 18px 20px; border-top: 4px solid var(--azul);
+}
+.kpi.riesgo  { border-top-color: var(--rojo); }
+.kpi.alerta  { border-top-color: var(--naranja); }
+.kpi.neutro  { border-top-color: var(--amarillo); }
+.kpi .etiqueta {
+  font-size: 10.5px; font-weight: 700; color: var(--texto-suave);
+  text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px;
+}
+.kpi .valor { font-size: 27px; font-weight: 700; letter-spacing: -.5px; }
+.kpi .nota  { font-size: 12px; color: var(--texto-suave); margin-top: 5px; }
+
+/* ── Gráficas ───────────────────────────────────────────────── */
+.graficas {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(400px,1fr));
+  gap: 16px; margin-bottom: 18px;
+}
+.panel {
+  background: #fff; border: 1px solid var(--borde); border-radius: var(--radio);
+  padding: 18px 20px;
+}
+.panel h3 { font-size: 14px; font-weight: 600; }
+.panel .sub { font-size: 11.5px; color: var(--texto-suave); margin: 3px 0 14px; }
+.lienzo { position: relative; height: 280px; }
+
+/* ── Tabla ──────────────────────────────────────────────────── */
+.encabezado-tabla {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 10px; margin-bottom: 12px;
+}
+.envoltura-tabla { overflow-x: auto; max-height: 460px; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+thead th {
+  position: sticky; top: 0; background: #fff; z-index: 1;
+  text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--borde);
+  font-size: 10.5px; font-weight: 700; color: var(--texto-suave);
+  text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+  cursor: pointer; user-select: none;
+}
+thead th:hover { color: var(--rojo); }
+tbody td { padding: 9px 12px; border-bottom: 1px solid #F0F1F3; white-space: nowrap; }
+tbody tr:hover { background: #FAFBFC; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.chip {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+/* Rampa de severidad con la paleta de marca */
+.chip.critico { background: var(--rojo-hondo); color: #fff; }
+.chip.alto    { background: var(--rojo);       color: #fff; }
+.chip.medio   { background: var(--naranja);    color: #fff; }
+/* El amarillo de marca es muy claro: exige texto oscuro y borde. */
+.chip.bajo    { background: var(--amarillo);   color: #4A3B00; border: 1px solid #D9CE00; }
+.chip.ok      { background: #E4F6FD; color: #00698F; border: 1px solid #B3E6F9; }
+
+.cargando { text-align: center; padding: 70px; color: var(--texto-suave); font-size: 14px; }
+.pie { text-align: center; color: var(--texto-suave); font-size: 11.5px; padding: 16px 0; }
+
+@media (max-width: 720px) {
+  .kpis { grid-template-columns: repeat(2,1fr); }
+  .graficas { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="contenedor">
+
+  <header class="encabezado">
+    <div class="placa-logo">
+      <? if (logo) { ?>
+        <img src="<?= logo ?>" alt="Davivienda">
+      <? } else { ?>
+        <span class="vacia">Espacio reservado<br>para el logo</span>
+      <? } ?>
+    </div>
+    <div class="titulo">
+      <h1>Tablero de Control de Pagos a Proveedores</h1>
+      <p>Alertas de inconsistencia · Cumplimiento de política de 30 días · Formas de pago</p>
+    </div>
+  </header>
+
+  <div id="cargando" class="cargando">Cargando datos…</div>
+
+  <div id="tablero" style="display:none">
+
+    <section class="filtros">
+      <div class="filtro">
+        <label>Unidad de negocio</label>
+        <select id="fUn"><option value="">Todas</option></select>
+      </div>
+      <div class="filtro">
+        <label>Tipo de alerta</label>
+        <select id="fAlerta"><option value="">Todas</option></select>
+      </div>
+      <div class="filtro">
+        <label>Forma de pago</label>
+        <select id="fForma"><option value="">Todas</option></select>
+      </div>
+      <div class="filtro">
+        <label>Cumplimiento</label>
+        <select id="fCumple"><option value="">Todos</option></select>
+      </div>
+      <button class="btn-limpiar" onclick="limpiar()">Limpiar</button>
+    </section>
+
+    <section class="kpis">
+      <div class="kpi">
+        <div class="etiqueta">Valor programado</div>
+        <div class="valor" id="kValor">—</div>
+        <div class="nota" id="kValorNota"></div>
+      </div>
+      <div class="kpi riesgo">
+        <div class="etiqueta">Pagos con alerta</div>
+        <div class="valor" id="kAlertas">—</div>
+        <div class="nota" id="kAlertasNota"></div>
+      </div>
+      <div class="kpi alerta">
+        <div class="etiqueta">Incumplimiento real 2025</div>
+        <div class="valor" id="kIncum">—</div>
+        <div class="nota" id="kIncumNota"></div>
+      </div>
+      <div class="kpi neutro">
+        <div class="etiqueta">Impacto económico</div>
+        <div class="valor" id="kImpacto">—</div>
+        <div class="nota" id="kImpactoNota"></div>
+      </div>
+    </section>
+
+    <section class="graficas">
+      <div class="panel">
+        <h3>Distribución de alertas</h3>
+        <p class="sub">Programación de pagos — clasificación por criticidad</p>
+        <div class="lienzo"><canvas id="gAlertas"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Formas de pago detectadas</h3>
+        <p class="sub">Canal por el que saldría cada pago programado</p>
+        <div class="lienzo"><canvas id="gFormas"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Cumplimiento de la política de 30 días</h3>
+        <p class="sub">Programación vs. fecha de radicación</p>
+        <div class="lienzo"><canvas id="gCumple"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Top 10 proveedores por mora — histórico 2025</h3>
+        <p class="sub">Interés por días en exceso · no se afecta por los filtros</p>
+        <div class="lienzo"><canvas id="gMora"></canvas></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="encabezado-tabla">
+        <div>
+          <h3>Detalle de pagos con alerta</h3>
+          <p class="sub" id="subTabla"></p>
+        </div>
+        <div class="filtro">
+          <select id="fSoloAlertas">
+            <option value="1">Solo con alerta</option>
+            <option value="0">Todos los pagos</option>
+          </select>
+        </div>
+      </div>
+      <div class="envoltura-tabla">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="ordenar('comp')">Comprobante</th>
+              <th onclick="ordenar('un')">UN</th>
+              <th onclick="ordenar('nit')">NIT</th>
+              <th onclick="ordenar('nombre')">Proveedor</th>
+              <th onclick="ordenar('valor')" class="num">Valor</th>
+              <th onclick="ordenar('alerta')">Alerta</th>
+              <th onclick="ordenar('dias')" class="num">Días</th>
+              <th onclick="ordenar('cumple')">Cumplimiento</th>
+              <th onclick="ordenar('forma')">Forma de pago</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpoTabla"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="pie" id="pie"></div>
+  </div>
+</div>
+
+<script>
+/* ══ Estado global ══════════════════════════════════════════ */
+var DATOS = null;      // payload completo del servidor
+var FILAS = [];        // filas de programación tras aplicar filtros
+var GRAFICAS = {};     // instancias de Chart.js para poder destruirlas
+var ORDEN = { campo: 'valor', desc: true };
+
+var PALETA = {
+  rojo: '#ED1C27', rojoHondo: '#A8131A', naranja: '#F58220',
+  amarillo: '#FFF200', azul: '#00AEEF'
+};
+
+/* Cada alerta tiene un color fijo, ordenado por gravedad.
+   Así el rojo siempre significa lo mismo en todo el tablero. */
+var COLOR_ALERTA = {
+  'Cambio de beneficiario':                'rojoHondo',
+  'Cambio de cuenta bancaria reciente':    'naranja',
+  'Cuenta no registrada históricamente':   'amarillo',
+  'Validación OK':                         'azul'
+};
+var CLASE_ALERTA = {
+  'Cambio de beneficiario':              'critico',
+  'Cambio de cuenta bancaria reciente':  'medio',
+  'Cuenta no registrada históricamente': 'bajo',
+  'Validación OK':                       'ok'
+};
+
+/* ══ Formato de números ═════════════════════════════════════ */
+function pesos(v) {
+  if (Math.abs(v) >= 1e9) return '$' + (v/1e9).toFixed(2) + ' MM';
+  if (Math.abs(v) >= 1e6) return '$' + (v/1e6).toFixed(1) + ' M';
+  if (Math.abs(v) >= 1e3) return '$' + (v/1e3).toFixed(0) + ' K';
+  return '$' + Math.round(v);
+}
+function pesosExactos(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
+function miles(v) { return v.toLocaleString('es-CO'); }
+
+/* ══ Carga inicial ══════════════════════════════════════════ */
+google.script.run
+  .withSuccessHandler(iniciar)
+  .withFailureHandler(function (e) {
+    document.getElementById('cargando').innerHTML =
+      '<strong style="color:#ED1C27">No se pudieron cargar los datos</strong><br><br>' + e.message;
+  })
+  .obtenerDatos();
+
+function iniciar(datos) {
+  DATOS = datos;
+  llenarFiltros();
+  ['fUn','fAlerta','fForma','fCumple','fSoloAlertas'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', refrescar);
+  });
+  document.getElementById('cargando').style.display = 'none';
+  document.getElementById('tablero').style.display = 'block';
+  document.getElementById('pie').textContent =
+    'Generado el ' + datos.generado + ' · ' + miles(datos.programacion.length) +
+    ' pagos programados · Fuente: Programación de Pagos, Históricos 2024-2025, Radicación y Formas de pago';
+  refrescar();
+}
+
+/* Llena cada desplegable con los valores que realmente existen. */
+function llenarFiltros() {
+  llenarUno('fUn', 'un');
+  llenarUno('fAlerta', 'alertaP');
+  llenarUno('fForma', 'forma');
+  llenarUno('fCumple', 'cumple');
+}
+function llenarUno(id, campo) {
+  var vistos = {};
+  DATOS.programacion.forEach(function (f) { if (f[campo]) vistos[f[campo]] = true; });
+  var select = document.getElementById(id);
+  Object.keys(vistos).sort().forEach(function (v) {
+    var op = document.createElement('option');
+    op.value = v; op.textContent = v;
+    select.appendChild(op);
+  });
+}
+
+function limpiar() {
+  ['fUn','fAlerta','fForma','fCumple'].forEach(function (id) {
+    document.getElementById(id).value = '';
+  });
+  refrescar();
+}
+
+/* ══ Ciclo principal ════════════════════════════════════════ */
+function refrescar() {
+  var un     = document.getElementById('fUn').value;
+  var alerta = document.getElementById('fAlerta').value;
+  var forma  = document.getElementById('fForma').value;
+  var cumple = document.getElementById('fCumple').value;
+
+  FILAS = DATOS.programacion.filter(function (f) {
+    return (!un     || f.un === un)
+        && (!alerta || f.alertaP === alerta)
+        && (!forma  || f.forma === forma)
+        && (!cumple || f.cumple === cumple);
+  });
+
+  pintarKpis();
+  pintarGraficas();
+  pintarTabla();
+}
+
+function pintarKpis() {
+  var total = FILAS.reduce(function (s, f) { return s + f.valor; }, 0);
+  var conAlerta = FILAS.filter(function (f) { return f.alertaP !== 'Validación OK'; });
+  var valorRiesgo = conAlerta.reduce(function (s, f) { return s + f.valor; }, 0);
+  var h = DATOS.kpiHistorico;
+
+  texto('kValor', pesos(total));
+  texto('kValorNota', miles(FILAS.length) + ' pagos programados');
+
+  texto('kAlertas', miles(conAlerta.length));
+  texto('kAlertasNota', FILAS.length
+    ? (conAlerta.length / FILAS.length * 100).toFixed(1) + '% de las filas · ' + pesos(valorRiesgo) + ' en riesgo'
+    : 'Sin filas');
+
+  var pct = h.evaluados ? (h.incumple / h.evaluados * 100) : 0;
+  texto('kIncum', pct.toFixed(2) + '%');
+  texto('kIncumNota', miles(h.incumple) + ' de ' + miles(h.evaluados) +
+    ' pagos · máx ' + h.maxDias + ' días');
+
+  texto('kImpacto', pesos(h.impacto));
+  texto('kImpactoNota', 'Interés de mora al 0,05% diario · ' + pesosExactos(h.impacto));
+}
+function texto(id, v) { document.getElementById(id).textContent = v; }
+
+/* ══ Gráficas ═══════════════════════════════════════════════ */
+function pintarGraficas() {
+  // Chart.js no permite dos gráficas en el mismo canvas:
+  // hay que destruir la anterior antes de crear la nueva.
+  Object.keys(GRAFICAS).forEach(function (k) { GRAFICAS[k].destroy(); });
+  GRAFICAS = {};
+
+  graficaAlertas();
+  graficaFormas();
+  graficaCumplimiento();
+  graficaMora();
+}
+
+function contar(filas, campo) {
+  var mapa = {};
+  filas.forEach(function (f) {
+    var v = f[campo] || 'Sin dato';
+    mapa[v] = (mapa[v] || 0) + 1;
+  });
+  return mapa;
+}
+
+function graficaAlertas() {
+  var mapa = contar(FILAS, 'alertaP');
+  var etiquetas = Object.keys(mapa).sort(function (a, b) { return mapa[b] - mapa[a]; });
+  var colores = etiquetas.map(function (e) { return PALETA[COLOR_ALERTA[e]] || '#9AA0A6'; });
+
+  GRAFICAS.alertas = new Chart(document.getElementById('gAlertas'), {
+    type: 'doughnut',
+    data: {
+      labels: etiquetas,
+      datasets: [{
+        data: etiquetas.map(function (e) { return mapa[e]; }),
+        backgroundColor: colores,
+        borderColor: '#fff', borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '58%',
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11.5 }, padding: 12 } },
+        tooltip: { callbacks: { label: etiquetaConPorcentaje } }
+      }
+    }
+  });
+}
+
+function graficaFormas() {
+  var mapa = contar(FILAS, 'forma');
+  var etiquetas = Object.keys(mapa).sort(function (a, b) { return mapa[b] - mapa[a]; });
+  var tonos = [PALETA.rojo, PALETA.azul, PALETA.naranja, PALETA.rojoHondo, PALETA.amarillo, '#9AA0A6'];
+
+  GRAFICAS.formas = new Chart(document.getElementById('gFormas'), {
+    type: 'bar',
+    data: {
+      labels: etiquetas,
+      datasets: [{
+        data: etiquetas.map(function (e) { return mapa[e]; }),
+        backgroundColor: etiquetas.map(function (_, i) { return tonos[i % tonos.length]; }),
+        borderRadius: 6, borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: etiquetaConPorcentaje } } },
+      scales: {
+        x: { grid: { color: '#F0F1F3' }, ticks: { font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function graficaCumplimiento() {
+  var mapa = contar(FILAS, 'cumple');
+  var etiquetas = Object.keys(mapa);
+  var colorPorEstado = {
+    'Cumple': PALETA.azul,
+    'Incumple': PALETA.rojo,
+    'Radicación no encontrada': '#C9CDD2'
+  };
+
+  GRAFICAS.cumple = new Chart(document.getElementById('gCumple'), {
+    type: 'doughnut',
+    data: {
+      labels: etiquetas,
+      datasets: [{
+        data: etiquetas.map(function (e) { return mapa[e]; }),
+        backgroundColor: etiquetas.map(function (e) { return colorPorEstado[e] || '#9AA0A6'; }),
+        borderColor: '#fff', borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '58%',
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11.5 }, padding: 12 } },
+        tooltip: { callbacks: { label: etiquetaConPorcentaje } }
+      }
+    }
+  });
+}
+
+function graficaMora() {
+  // Agrupamos el impacto por NIT y nos quedamos con los 10 mayores.
+  var porNit = {};
+  DATOS.incumplimientos.forEach(function (f) {
+    porNit[f.nit] = (porNit[f.nit] || 0) + f.impacto;
+  });
+  var top = Object.keys(porNit)
+    .sort(function (a, b) { return porNit[b] - porNit[a]; })
+    .slice(0, 10);
+
+  GRAFICAS.mora = new Chart(document.getElementById('gMora'), {
+    type: 'bar',
+    data: {
+      labels: top,
+      datasets: [{
+        data: top.map(function (n) { return porNit[n]; }),
+        backgroundColor: PALETA.rojo,
+        borderRadius: 6, borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function (c) { return pesosExactos(c.parsed.x); } } }
+      },
+      scales: {
+        x: { grid: { color: '#F0F1F3' }, ticks: { font: { size: 11 }, callback: pesos } },
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+      }
+    }
+  });
+}
+
+function etiquetaConPorcentaje(ctx) {
+  var valor = ctx.parsed.x !== undefined ? ctx.parsed.x : ctx.parsed;
+  var total = ctx.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+  return miles(valor) + ' (' + (valor / total * 100).toFixed(1) + '%)';
+}
+
+/* ══ Tabla ══════════════════════════════════════════════════ */
+function ordenar(campo) {
+  if (ORDEN.campo === campo) ORDEN.desc = !ORDEN.desc;
+  else { ORDEN.campo = campo; ORDEN.desc = true; }
+  pintarTabla();
+}
+
+function pintarTabla() {
+  var soloAlertas = document.getElementById('fSoloAlertas').value === '1';
+  var filas = soloAlertas
+    ? FILAS.filter(function (f) { return f.alertaP !== 'Validación OK'; })
+    : FILAS.slice();
+
+  filas.sort(function (a, b) {
+    var x = a[ORDEN.campo], y = b[ORDEN.campo];
+    if (x === null) x = -Infinity;
+    if (y === null) y = -Infinity;
+    if (typeof x === 'string') { x = x.toLowerCase(); y = String(y).toLowerCase(); }
+    if (x < y) return ORDEN.desc ? 1 : -1;
+    if (x > y) return ORDEN.desc ? -1 : 1;
+    return 0;
+  });
+
+  // Tope de 200 filas: más que eso vuelve lenta la tabla sin aportar.
+  var visibles = filas.slice(0, 200);
+  var html = visibles.map(function (f) {
+    return '<tr>'
+      + '<td>' + f.comp + '</td>'
+      + '<td>' + f.un + '</td>'
+      + '<td>' + f.nit + '</td>'
+      + '<td>' + f.nombre + '</td>'
+      + '<td class="num">' + pesosExactos(f.valor) + '</td>'
+      + '<td>' + chipsDeAlerta(f.alerta) + '</td>'
+      + '<td class="num">' + (f.dias === null ? '—' : f.dias) + '</td>'
+      + '<td>' + f.cumple + '</td>'
+      + '<td>' + f.forma + '</td>'
+      + '</tr>';
+  }).join('');
+
+  document.getElementById('cuerpoTabla').innerHTML =
+    html || '<tr><td colspan="9" style="text-align:center;padding:30px;color:#6B7280">Sin resultados</td></tr>';
+
+  document.getElementById('subTabla').textContent =
+    'Mostrando ' + miles(visibles.length) + ' de ' + miles(filas.length) +
+    ' filas · clic en un encabezado para ordenar';
+}
+
+// Una fila puede traer dos alertas separadas por " | ": se pinta una por una.
+function chipsDeAlerta(texto) {
+  if (!texto) return '—';
+  return texto.split(' | ').map(function (a) {
+    return '<span class="chip ' + (CLASE_ALERTA[a] || 'medio') + '">' + a + '</span>';
+  }).join(' ');
+}
+</script>
+</body>
+</html>
