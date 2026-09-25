@@ -184,3 +184,4 @@ function ejercicio3() {
   Logger.log('Fuente usada: %s', JSON.stringify(kpiFuente));
   Logger.log('Forma detectada: %s', JSON.stringify(kpiForma));
 }
+/ejercicio3
